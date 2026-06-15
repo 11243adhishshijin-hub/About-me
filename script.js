@@ -1,36 +1,65 @@
-/* =========================
-   THEME
-========================= */
+/* THEME */
 if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark");
+document.body.classList.add("dark");
 }
 
 function toggleTheme() {
-    document.body.classList.toggle("dark");
+document.body.classList.toggle("dark");
 
-    if (document.body.classList.contains("dark")) {
-        localStorage.setItem("theme", "dark");
-    } else {
-        localStorage.setItem("theme", "light");
-    }
+localStorage.setItem(
+"theme",
+document.body.classList.contains("dark") ? "dark" : "light"
+);
 }
 
-/* =========================
-   VISITS COUNTER
-========================= */
+/* VISITS */
 let visits = localStorage.getItem("visits") || 0;
 visits++;
 localStorage.setItem("visits", visits);
-document.getElementById("visits").innerText =
-    "Visits: " + visits;
+
+let v = document.getElementById("visits");
+if (v) v.innerText = "Visits: " + visits;
+
+/* LOADER FIX */
+window.addEventListener("load", () => {
+const loader = document.getElementById("loader");
+if (loader) loader.style.display = "none";
+});
+
+/* PARTICLES SAFE */
+window.addEventListener("load", () => {
+const el = document.getElementById("tsparticles");
+if (!el || typeof tsParticles === "undefined") return;
+
+tsParticles.load("tsparticles", {
+fullScreen: { enable: false },
+particles: {
+number: { value: 40 },
+color: { value: "#ff7300" },
+move: { enable: true, speed: 1 },
+opacity: { value: 0.4 },
+size: { value: { min: 1, max: 3 } },
+links: {
+enable: true,
+color: "#ff7300",
+distance: 120
+}
+}
+});
+});
 
 /* =========================
-   TIC TAC TOE
+   TIC TAC TOE (FIXED)
 ========================= */
-let board = ["", "", "", "", "", "", "", "", ""];
-let gameActive = true;
 
 let difficulty = "hard";
+
+function setDifficulty(value) {
+    difficulty = value;
+}
+
+let board = ["", "", "", "", "", "", "", "", ""];
+let gameActive = true;
 
 const human = "X";
 const ai = "O";
@@ -43,12 +72,14 @@ const winPatterns = [
 
 function createBoard() {
     const boardDiv = document.getElementById("board");
+    if (!boardDiv) return; // safety fix
+
     boardDiv.innerHTML = "";
 
     board.forEach((cell, index) => {
         const div = document.createElement("div");
-        div.classList.add("cell");
-        div.innerText = cell;
+        div.className = "cell";
+        div.textContent = cell;
 
         if (cell === "X") div.classList.add("x");
         if (cell === "O") div.classList.add("o");
@@ -65,169 +96,214 @@ function handleMove(index) {
     createBoard();
 
     if (checkWinner(human)) return;
-    if (!board.includes("")) return endGame("Draw 🤝");
 
-    setTimeout(aiMove, 300);
+    if (!board.includes("")) {
+        endGame("Draw 🤝");
+        return;
+    }
+
+    setTimeout(aiMove, 250);
 }
 
 function aiMove() {
+
+    let available = [];
+
+    for (let i = 0; i < board.length; i++) {
+        if (board[i] === "") available.push(i);
+    }
+
+    if (available.length === 0) return;
+
     let move;
 
     if (difficulty === "easy") {
-        // EASY: random move
-        let available = [];
-
-        for (let i = 0; i < board.length; i++) {
-            if (board[i] === "") available.push(i);
-        }
 
         move = available[Math.floor(Math.random() * available.length)];
 
     } else {
-        // HARD: minimax
-        let bestScore = -Infinity;
 
-        for (let i = 0; i < board.length; i++) {
-            if (board[i] === "") {
-                board[i] = ai;
-                let score = minimax(board, 0, false);
-                board[i] = "";
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    move = i;
-                }
-            }
-        }
+        move = getBestMove();
     }
 
     board[move] = ai;
+
     createBoard();
 
     if (checkWinner(ai)) return;
-    if (!board.includes("")) endGame("Draw 🤝");
-}
-/* =========================
-   MINIMAX AI
-========================= */
-function minimax(newBoard, depth, isMaximizing) {
-    if (checkWin(ai, newBoard)) return 10 - depth;
-    if (checkWin(human, newBoard)) return depth - 10;
-    if (!newBoard.includes("")) return 0;
 
-    if (isMaximizing) {
-        let best = -Infinity;
-
-        for (let i = 0; i < newBoard.length; i++) {
-            if (newBoard[i] === "") {
-                newBoard[i] = ai;
-                best = Math.max(best, minimax(newBoard, depth + 1, false));
-                newBoard[i] = "";
-            }
-        }
-
-        return best;
-    } else {
-        let best = Infinity;
-
-        for (let i = 0; i < newBoard.length; i++) {
-            if (newBoard[i] === "") {
-                newBoard[i] = human;
-                best = Math.min(best, minimax(newBoard, depth + 1, true));
-                newBoard[i] = "";
-            }
-        }
-
-        return best;
+    if (!board.includes("")) {
+        endGame("Draw 🤝");
     }
 }
 
-/* =========================
-   WIN CHECK
-========================= */
-function checkWin(player, b = board) {
-    return winPatterns.some(pattern =>
-        pattern.every(i => b[i] === player)
-    );
+function getBestMove() {
+
+    let bestScore = -Infinity;
+    let move;
+
+    for (let i = 0; i < 9; i++) {
+
+        if (board[i] === "") {
+
+            board[i] = ai;
+
+            let score = minimax(board, 0, false);
+
+            board[i] = "";
+
+            if (score > bestScore) {
+
+                bestScore = score;
+                move = i;
+            }
+        }
+    }
+
+    return move;
 }
 
-/* =========================
-   WIN HIGHLIGHT (NEW)
-========================= */
-function getWinningPattern(player, b = board) {
-    return winPatterns.find(pattern =>
-        pattern.every(i => b[i] === player)
-    );
+function minimax(boardState, depth, isMaximizing) {
+
+    if (winnerExists(ai)) return 10 - depth;
+    if (winnerExists(human)) return depth - 10;
+    if (!boardState.includes("")) return 0;
+
+    if (isMaximizing) {
+
+        let bestScore = -Infinity;
+
+        for (let i = 0; i < 9; i++) {
+
+            if (boardState[i] === "") {
+
+                boardState[i] = ai;
+
+                let score = minimax(boardState, depth + 1, false);
+
+                boardState[i] = "";
+
+                bestScore = Math.max(score, bestScore);
+            }
+        }
+
+        return bestScore;
+
+    } else {
+
+        let bestScore = Infinity;
+
+        for (let i = 0; i < 9; i++) {
+
+            if (boardState[i] === "") {
+
+                boardState[i] = human;
+
+                let score = minimax(boardState, depth + 1, true);
+
+                boardState[i] = "";
+
+                bestScore = Math.min(score, bestScore);
+            }
+        }
+
+        return bestScore;
+    }
+}
+
+function winnerExists(player) {
+
+    return winPatterns.some(pattern => {
+
+        const [a,b,c] = pattern;
+
+        return (
+            board[a] === player &&
+            board[b] === player &&
+            board[c] === player
+        );
+    });
+}
+
+function checkWinner(player) {
+    for (let pattern of winPatterns) {
+        const [a,b,c] = pattern;
+
+        if (board[a] === player &&
+            board[b] === player &&
+            board[c] === player) {
+
+            highlightWin(pattern);
+            endGame(player + " wins 🎉");
+            return true;
+        }
+    }
+    return false;
 }
 
 function highlightWin(pattern) {
     const cells = document.querySelectorAll(".cell");
 
     pattern.forEach(i => {
-        cells[i].style.background = "#22c55e";
-        cells[i].style.color = "white";
-        cells[i].style.transform = "scale(1.1)";
-        cells[i].style.boxShadow = "0 0 15px #22c55e";
+        if (cells[i]) {
+            cells[i].style.background = "#22c55e";
+            cells[i].style.color = "white";
+            cells[i].style.transform = "scale(1.1)";
+        }
     });
 }
 
-/* =========================
-   WINNER
-========================= */
-function checkWinner(player) {
-    const winPattern = getWinningPattern(player);
-
-    if (winPattern) {
-        highlightWin(winPattern);
-        endGame(player + " wins! 🎉");
-        return true;
-    }
-    return false;
-}
-
-/* =========================
-   GAME END
-========================= */
 function endGame(message) {
-    document.getElementById("status").innerText = message;
+    const status = document.getElementById("status");
+    if (status) status.textContent = message;
     gameActive = false;
 }
 
-/* =========================
-   RESET GAME
-========================= */
 function resetGame() {
     board = ["", "", "", "", "", "", "", "", ""];
     gameActive = true;
-    document.getElementById("status").innerText = "";
+
+    const status = document.getElementById("status");
+    if (status) status.textContent = "";
+
     createBoard();
 }
 
-/* =========================
-   START GAME
-========================= */
-createBoard();
+/* IMPORTANT FIX */
+window.addEventListener("load", createBoard);
 
 /* =========================
-   CALCULATOR
+   CALCULATOR (FIXED)
 ========================= */
+
+function getDisplay() {
+    return document.getElementById("display");
+}
+
 function append(value) {
-    document.getElementById("display").value += value;
+    const display = getDisplay();
+    if (!display) return;
+    display.value += value;
 }
 
 function clearDisplay() {
-    document.getElementById("display").value = "";
+    const display = getDisplay();
+    if (!display) return;
+    display.value = "";
 }
 
 function calculate() {
-    try {
-        document.getElementById("display").value =
-            eval(document.getElementById("display").value);
-    } catch {
-        document.getElementById("display").value = "Error";
-    }
-}
+    const display = getDisplay();
+    if (!display) return;
 
-function setDifficulty(level) {
-    difficulty = level;
+    try {
+        // safer eval check
+        const result = Function(
+    `"use strict"; return (${display.value})`
+)();
+
+display.value = result;
+    } catch (e) {
+        display.value = "Error";
+    }
 }
