@@ -1,0 +1,59 @@
+body {
+    font-family: Inter, sans-serif;
+    background: linear-gradient(135deg,#0f172a,#1e293b);
+    color: white;
+    text-align: center;
+}
+
+.game-container {
+    margin-top: 80px;
+}
+
+.choices {
+    margin-top: 20px;
+}
+
+button {
+    background: #ff7300;
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    margin: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: .3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+.battle-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+    margin: 40px 0;
+}
+
+.hand {
+    font-size: 90px;
+}
+
+.vs {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.shake {
+    animation: shake .5s infinite;
+}
+
+@keyframes shake {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(15deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-15deg); }
+    100% { transform: rotate(0deg); }
+}
