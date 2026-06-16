@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel of Names</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(
+        135deg,
+        #0f172a,
+        #1e293b,
+        #334155
+    );
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 30px;
+    text-shadow: 0 4px 15px rgba(0,0,0,.3);
+}
+
+.container {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.controls {
+    width: 320px;
+    padding: 25px;
+    border-radius: 20px;
+
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(12px);
+
+    border: 1px solid rgba(255,255,255,.15);
+
+    box-shadow:
+        0 8px 32px rgba(0,0,0,.3);
+}
+
+.controls h3 {
+    margin-bottom: 15px;
+}
+
+textarea {
+    width: 100%;
+    height: 220px;
+
+    padding: 15px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: rgba(255,255,255,.1);
+    color: white;
+
+    resize: none;
+    font-size: 15px;
+}
+
+textarea:focus {
+    outline: 2px solid #60a5fa;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+
+    margin-top: 12px;
+
+    border: none;
+    border-radius: 12px;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all .25s ease;
+}
+
+button:first-of-type {
+    background: #3b82f6;
+    color: white;
+}
+
+button:last-of-type {
+    background: #22c55e;
+    color: white;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+button:active {
+    transform: scale(.98);
+}
+
+#wheelContainer {
+    position: relative;
+}
+
+#pointer {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    font-size: 50px;
+    color: #facc15;
+
+    text-shadow:
+        0 0 10px #facc15,
+        0 0 20px #facc15;
+
+    z-index: 10;
+}
+
+canvas {
+    border-radius: 50%;
+
+    border: 8px solid white;
+
+    background: white;
+
+    box-shadow:
+        0 0 0 10px rgba(255,255,255,.1),
+        0 20px 50px rgba(0,0,0,.4);
+}
+
+#winner {
+    margin-top: 20px;
+
+    min-height: 50px;
+
+    font-size: 28px;
+    font-weight: bold;
+
+    color: #facc15;
+
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    canvas {
+        width: 350px;
+        height: 350px;
+    }
+}
+
+#centerCap {
+    position: absolute;
+
+    width: 50px;
+    height: 50px;
+
+    background: white;
+
+    border-radius: 50%;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    box-shadow:
+        0 0 15px rgba(0,0,0,.3);
+
+    z-index: 5;
+}
+
+</style>
+</head>
+<body>
+
+<h1>🎡 Wheel of Names</h1>
+
+<div class="container">
+
+    <div class="controls">
+        <h3>Enter Names</h3>
+        <textarea id="names">
+Alice
+Bob
+Charlie
+David
+Emma
+        </textarea>
+
+        <button onclick="buildWheel()">Build Wheel</button>
+        <button onclick="spinWheel()">Spin</button>
+
+        <div id="winner"></div>
+    </div>
+
+    <div id="wheelContainer">
+        <div id="pointer">▼</div>
+        <div id="centerCap"></div>
+        <canvas id="wheel" width="500" height="500"></canvas>
+    </div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+
+let names = [];
+let rotation = 0;
+let spinning = false;
+
+const colors = [
+    "#FF6384",
+    "#36A2EB",
+    "#FFCE56",
+    "#4BC0C0",
+    "#9966FF",
+    "#FF9F40",
+    "#66BB6A",
+    "#EF5350"
+];
+
+function buildWheel() {
+    names = document.getElementById("names")
+        .value
+        .split("\n")
+        .map(n => n.trim())
+        .filter(Boolean);
+
+    drawWheel();
+}
+
+function drawWheel() {
+    if (names.length === 0) return;
+
+    const centerX = 250;
+    const centerY = 250;
+    const radius = 240;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const arcSize = (2 * Math.PI) / names.length;
+
+    for (let i = 0; i < names.length; i++) {
+
+        // Shift wheel so slices are centered under the pointer
+        const start = i * arcSize - Math.PI / 2 - arcSize / 2;
+        const end = start + arcSize;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, start, end);
+        ctx.closePath();
+
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+
+        ctx.save();
+
+        ctx.translate(centerX, centerY);
+        ctx.rotate(start + arcSize / 2);
+
+        ctx.textAlign = "right";
+        ctx.fillStyle = "white";
+        ctx.font = "18px Arial";
+
+        ctx.fillText(names[i], radius - 20, 8);
+
+        ctx.restore();
+    }
+}
+
+function spinWheel() {
+    if (spinning || names.length === 0) return;
+
+    spinning = true;
+
+    const winnerIndex = Math.floor(Math.random() * names.length);
+
+    const sliceAngle = 360 / names.length;
+
+    // Since wheel is centered at the top now,
+    // each slice center is simply:
+    const targetRotation =
+        (360 - winnerIndex * sliceAngle) % 360;
+
+    const extraSpins =
+        (5 + Math.floor(Math.random() * 5)) * 360;
+
+    const finalRotation =
+        rotation +
+        extraSpins +
+        ((targetRotation - rotation + 360) % 360);
+
+    const duration = 5000;
+    const startTime = performance.now();
+
+    function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        const currentRotation =
+            rotation +
+            (finalRotation - rotation) * easeOut;
+
+        canvas.style.transform =
+            `rotate(${currentRotation}deg)`;
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            rotation = finalRotation % 360;
+            spinning = false;
+
+            document.getElementById("winner").innerHTML =
+                `🏆 Winner: ${names[winnerIndex]}`;
+        }
+    }
+
+    requestAnimationFrame(animate);
+}
+
+buildWheel();
+</script>
+
+</body>
+</html>
